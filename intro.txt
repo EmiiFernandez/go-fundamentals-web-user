@@ -1,0 +1,103 @@
+Desarrollaremos un servicio a nivel local, utilizando microservicios y aplicaciones con comunicación HTTP 1.1 y el formato de intercambio JSON.
+
+HTTP 1.1 
+	Es un protocolo de comunicación utilizado para la transferencia de datos en la World Wide Web. Es la versión más comúnmente utilizada de HTTP en la actualidad, que permite la comunicación entre clientes (como navegadores web) y servidores web. Utilizaremos esta versión para garantizar una comunicación eficiente y compatible con una amplia gama de aplicaciones.
+
+JSON
+	El formato de intercambio de datos que emplearemos es JSON (JavaScript Object Notation). Este formato ligero y legible por humanos es ampliamente utilizado para la transmisión de datos estructurados entre un servidor y un cliente. La estructura del JSON facilita su análisis y manipulación tanto por parte de los desarrolladores como de las aplicaciones. Utilizaremos JSON para representar la información del usuario de manera clara y concisa.
+
+La estructura del JSON que manejaremos es la siguiente:
+{
+	"first_name": "Nahuel",
+	"age": 33,
+	"is_developer": true,
+	"languages": ["Python", "NodeJS", "Java", "Go"],
+	"address": {
+		"country": "Argentina",
+		"state": "Buenos Aires"
+	},
+	"pets": [
+		{
+			"name": "Azul",
+			"species": "Cat"
+		},
+		{
+			"name": "Ulises",
+			"species": "Dog"
+		}
+	]
+}
+	//format txt: cualquier formato
+
+En cada solicitud, enviaremos:
+
+	*Request Header: Detalles adicionales de la solicitud, como tokens de autenticación, si es necesario.
+
+	*Request Body: Contiene toda la información del usuario en el formato especificado anteriormente.
+
+Los métodos que nuestro servicio aceptará para recibir solicitudes son:
+
+	*POST: Utilizado para crear recursos nuevos.
+	*GET: Utilizado para obtener información o recursos existentes.
+	*PUT: Utilizado para actualizar un recurso completo.
+	*PATCH: Utilizado para realizar actualizaciones parciales en un recurso.
+	*DELETE: Utilizado para eliminar recursos.
+
+Utilizaremos Postman como herramienta para realizar y probar estas solicitudes.
+
+Principios REST
+
+REST (Representational State Transfer) es un estilo de arquitectura para diseñar sistemas de software distribuidos, enfocado en la interoperabilidad entre sistemas y la escalabilidad del sistema.
+
+Algunos de los principios clave de REST son:
+
+	*Interfaz uniforme: Define una interfaz clara y uniforme entre los componentes del sistema, lo que facilita la comunicación entre ellos. Esto incluye el uso de métodos HTTP estándar (GET, POST, PUT, DELETE) y la manipulación de recursos a través de URIs (Uniform Resource Identifiers).
+
+	*Sin estado: Cada solicitud desde el cliente al servidor debe contener toda la información necesaria para comprender y procesar la solicitud. El servidor no debe almacenar ningún estado sobre el cliente entre solicitudes. Esto mejora la escalabilidad y la confiabilidad del sistema.
+
+	*Cacheable: Las respuestas a las solicitudes deben indicar si pueden ser almacenadas en caché por el cliente o intermediarios, lo que ayuda a mejorar la eficiencia y la velocidad de las interacciones posteriores.
+
+	*Sistema cliente-servidor: El sistema se divide en un cliente, que inicia las solicitudes, y un servidor, que responde a esas solicitudes. Esta separación de preocupaciones permite que los componentes evolucionen de forma independiente y facilita la escalabilidad.
+
+	*Capa de interfaz uniforme: Entre el cliente y el servidor puede haber una capa de interfaz uniforme, que puede incluir servidores proxy, gateways y otros componentes que facilitan la comunicación entre el cliente y el servidor sin afectar a la arquitectura básica del sistema.
+
+Información que contiene una solicitud
+
+Una solicitud REST puede contener varios elementos que ayudan a identificar y procesar la solicitud de manera adecuada. 
+
+	*URL: Es la dirección que identifica el recurso al que se está accediendo. Puede incluir tanto partes estáticas como dinámicas, así como parámetros de consulta.
+		URL: http://my-app.com/users
+
+	*Método HTTP: Indica la acción que se desea realizar en el recurso identificado por la URL. Algunos de los métodos comunes son GET, POST, PUT, PATCH y DELETE.
+		method: POST
+
+	*Cuerpo de la solicitud (Body): Contiene los datos que se envían al servidor, como información del usuario en el caso de una solicitud de creación o actualización de recursos.
+
+	*Encabezados (Headers): Proporcionan información adicional sobre la solicitud, como la autenticación del usuario, el tipo de contenido enviado o esperado, y otros metadatos relevantes.
+
+
+Ejemplos de partes de una solicitud:
+
+Path estático: http://my-app.com/users
+Path dinámico: http://my-app.com/users/12
+Query String: http://my-app.com/users?page=2&limit=3
+
+Package GO http
+
+Proporciona implementaciones tanto para clientes como para servidores HTTP. 
+
+Clientes y Transportes:
+
+	Realizar solicitudes HTTP (o HTTPS) utilizando los métodos Get, Head, Post, y PostForm. Estos métodos facilitan la creación de solicitudes y el envío de datos al servidor.
+	Controlar los encabezados de la solicitud, la política de redireccionamiento y otras configuraciones mediante la creación de un cliente personalizado con el tipo http.Client.
+	Controlar aspectos como proxy, configuración TLS, mantenimiento de conexiones activas, compresión, entre otros, creando un transporte personalizado con el tipo http.Transport.
+
+Servidores:
+
+	El método ListenAndServe inicia un servidor HTTP con una dirección y un controlador dados. Por lo general, el controlador es nil, lo que significa que se utilizará DefaultServeMux.
+	Se pueden añadir manejadores al DefaultServeMux utilizando las funciones Handle y HandleFunc. Esto te permite especificar cómo manejar las solicitudes entrantes para diferentes rutas.
+	Para un control más detallado sobre el comportamiento del servidor, se puede crear un servidor personalizado utilizando el tipo http.Server. Esto permite especificar detalles como el tiempo de espera de lectura/escritura, el tamaño máximo de los encabezados, entre otros.
+
+HTTP/2:
+
+	Soporte transparente para el protocolo HTTP/2 cuando se utiliza HTTPS. Se puede deshabilitar el soporte para HTTP/2 configurando Transport.TLSNextProto (para clientes) o Server.TLSNextProto (para servidores) como un mapa no nulo y vacío.
