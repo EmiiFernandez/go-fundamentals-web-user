@@ -45,6 +45,7 @@ func init() {
 		},
 	}
 
+	// Obtener el siguiente ID disponible
 	maxID = getNextID()
 }
 
@@ -52,6 +53,8 @@ func main() {
 	// Inicializamos un servidor HTTP en el puerto 8080
 	// Asignamos la función UserServer para manejar las solicitudes en la ruta "/users".
 	http.HandleFunc("/users", UserServer)
+
+	fmt.Println("Server started at port 8080")
 
 	// Escuchamos por solicitudes entrantes en el puerto 8080.
 	// La función ListenAndServe siempre devuelve un error (que será no nulo) a menos que haya un problema,
@@ -61,7 +64,6 @@ func main() {
 
 // UserServer maneja las solicitudes HTTP dirigidas a la ruta "/users".
 func UserServer(w http.ResponseWriter, r *http.Request) {
-	var status int
 	switch r.Method {
 	case http.MethodGet:
 		// Si la solicitud es un GET, llamamos a la función GetAllUser
@@ -78,10 +80,7 @@ func UserServer(w http.ResponseWriter, r *http.Request) {
 		// Llamamos a la función PostUser para agregar el nuevo usuario y responder con los datos del usuario creado
 		PostUser(w, u)
 	default:
-		// Si el método no es GET o POST, devolvemos un mensaje de ruta no encontrada y el código de estado 404 Not Found
-		status = 404
-		w.WriteHeader(status)
-		fmt.Fprintf(w, `{ "status": %d, "message": %s}`, status, "not found")
+		InvalidMethod(w)
 	}
 }
 
@@ -95,6 +94,23 @@ func GetAllUser(w http.ResponseWriter) {
 func PostUser(w http.ResponseWriter, data interface{}) {
 	// Convertir los datos a un objeto User
 	user := data.(User)
+
+	// Validar si los campos obligatorios están presentes
+	if user.FirstName == "" {
+		MsgResponse(w, http.StatusBadRequest, "first name is required")
+		return
+	}
+
+	if user.LastName == "" {
+		MsgResponse(w, http.StatusBadRequest, "last name is required")
+		return
+	}
+
+	if user.Email == "" {
+		MsgResponse(w, http.StatusBadRequest, "email is required")
+		return
+	}
+
 	// Asignar el siguiente ID disponible al nuevo usuario
 	user.ID = getNextID()
 	// Agregar el nuevo usuario a la lista de usuarios
@@ -103,11 +119,17 @@ func PostUser(w http.ResponseWriter, data interface{}) {
 	DataResponse(w, http.StatusCreated, user)
 }
 
+func InvalidMethod(w http.ResponseWriter) {
+	status := http.StatusNotFound
+	w.WriteHeader(status)
+	fmt.Fprintf(w, `{"status": %d, "message": "method doesn't exist"}`, status)
+}
+
 // MsgResponse responde con un mensaje y un código de estado HTTP específico
 func MsgResponse(w http.ResponseWriter, status int, message string) {
 	// Escribimos el mensaje y el código de estado en formato JSON
 	w.WriteHeader(status)
-	fmt.Fprintf(w, `{"status": %d, "data": %s}`, status, message)
+	fmt.Fprintf(w, `{"status": %d, "message": %s}`, status, message)
 }
 
 // DataResponse escribe la respuesta HTTP con los datos en formato JSON y el código de estado especificado
