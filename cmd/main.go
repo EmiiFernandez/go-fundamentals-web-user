@@ -5,10 +5,9 @@ import (
 	"fmt"      // Paquete para formateo de salida
 	"log"      // Paquete para registro de errores
 	"net/http" // Paquete para crear servidores HTTP
-	"os"
 
-	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/domain"
 	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/user"
+	"github.com/EmiiFernandez/go-fundamentals-web-users/pkg/bootstrap"
 )
 
 func main() {
@@ -16,17 +15,10 @@ func main() {
 	server := http.NewServeMux()
 
 	// Simulación de una base de datos en memoria
-	db := user.DB{
-		Users: []domain.User{
-			{ID: 1, FirstName: "Nahuel", LastName: "Costamagna", Email: "nahuel@domain.com"},
-			{ID: 2, FirstName: "Eren", LastName: "Jaeger", Email: "eren@domain.com"},
-			{ID: 3, FirstName: "Paco", LastName: "Costa", Email: "paco@domain.com"},
-		},
-		MaxUserID: 3,
-	}
+	db := bootstrap.NewBD()
 
 	// Crea un logger para registrar mensajes en la salida estándar
-	logger := log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
+	logger := bootstrap.NewLogger()
 
 	// Crea un repositorio de usuarios utilizando la base de datos y el logger
 	repo := user.NewRepo(db, logger)
