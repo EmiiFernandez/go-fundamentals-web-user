@@ -23,7 +23,7 @@ func main() {
 	// Crea un repositorio de usuarios utilizando la base de datos y el logger
 	repo := user.NewRepo(db, logger)
 
-	// Crea un servicio de usuarios utilizando el logger y el repositorio
+	// Crea un servicio de usuarios utilizando el logger y el repositorio, para la lógica de la aplicación
 	service := user.NewService(logger, repo)
 
 	// Crea un contexto de fondo para las solicitudes HTTP
