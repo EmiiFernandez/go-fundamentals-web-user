@@ -8,6 +8,7 @@ import (
 
 	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/user"
 	"github.com/EmiiFernandez/go-fundamentals-web-users/pkg/bootstrap"
+	"github.com/EmiiFernandez/go-fundamentals-web-users/pkg/handler"
 )
 
 func main() {
@@ -23,14 +24,13 @@ func main() {
 	// Crea un repositorio de usuarios utilizando la base de datos y el logger
 	repo := user.NewRepo(db, logger)
 
-	// Crea un servicio de usuarios utilizando el logger y el repositorio, para la lógica de la aplicación
+	// Crea un servicio de usuarios utilizando el logger y el repositorio
 	service := user.NewService(logger, repo)
 
 	// Crea un contexto de fondo para las solicitudes HTTP
 	ctx := context.Background()
 
-	// Registra un manejador para la ruta "/users" que delega el control a la función MakeEndpoints del paquete user
-	server.HandleFunc("/users", user.MakeEndpoints(ctx, service))
+	handler.NewUserHTTPServer(ctx, server, user.MakeEndpoints(ctx, service))
 
 	// Imprime un mensaje indicando el puerto donde se inicia el servidor
 	fmt.Println("Server started at port 8080")
