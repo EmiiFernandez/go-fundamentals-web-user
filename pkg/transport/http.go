@@ -9,6 +9,13 @@ import (
 
 // Define el contrato para un objeto que maneja la ejecución de un endpoint.
 type Transport interface {
+	/*
+		El método Server es responsable de:
+			.Decodificar la solicitud HTTP (usando decode).
+			.Ejecutar el endpoint (pasando el contexto y los datos decodificados).
+			.Codificar la respuesta del endpoint (usando encode).
+			.Manejar errores de decodificación, ejecución del endpoint o codificación de la respuesta (usando encodeError).
+	*/
 	Server(
 		//función que encapsula la lógica del negocio del endpoin
 		endpoint Endpoint,
