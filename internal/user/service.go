@@ -16,6 +16,7 @@ type Service interface {
 
 	// Obtiene todos los usuarios
 	GetAll(ctx context.Context) ([]domain.User, error)
+	Get(ctx context.Context, id uint64) (*domain.User, error)
 }
 
 // Implementación del servicio de usuarios
@@ -67,6 +68,16 @@ func (s *service) GetAll(ctx context.Context) ([]domain.User, error) {
 
 	// Retorna la lista de usuarios obtenida del repositorio
 	return users, nil
+}
+
+func (s service) Get(ctx context.Context, id uint64) (*domain.User, error) {
+	user, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	s.log.Println("Se ha obtenido el usuario seleccionado")
+
+	return user, nil
 }
 
 /*

@@ -2,7 +2,9 @@ package user
 
 import (
 	"context" // Paquete `context`: Este paquete proporciona un objeto de contexto que lleva información del ámbito de la solicitud.
-	"log"     // Paquete `log`: Este paquete proporciona funciones para registrar mensajes.
+	"errors"
+	"log" // Paquete `log`: Este paquete proporciona funciones para registrar mensajes.
+	"slices"
 
 	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/domain" // Paquete `internal/domain`: Este paquete (probablemente ubicado en el directorio `internal`) proporciona la estructura `User` utilizada para representar datos de usuario.
 )
@@ -17,6 +19,7 @@ type DB struct {
 type Repository interface {
 	Create(ctx context.Context, user *domain.User) error // Método para crear un nuevo usuario: Define un método llamado `Create` que recibe un contexto y un puntero a una estructura `domain.User` y devuelve un error.
 	GetAll(ctx context.Context) ([]domain.User, error)   // Método para obtener todos los usuarios: Define un método llamado `GetAll` que recibe un contexto y devuelve una lista de estructuras `domain.User` y un error.
+	Get(ctx context.Context, id uint64) (*domain.User, error)
 }
 
 // repo es una implementación de la interfaz Repository.
@@ -47,6 +50,19 @@ func (r *repo) Create(ctx context.Context, user *domain.User) error {
 func (r *repo) GetAll(ctx context.Context) ([]domain.User, error) {
 	r.log.Println("repository get all") // Registrar en el logger que se está obteniendo la lista de usuarios
 	return r.db.Users, nil              // Devolver la lista de usuarios
+}
+
+func (r *repo) Get(ctx context.Context, id uint64) (*domain.User, error) {
+	index := slices.IndexFunc(r.db.Users, func(v domain.User) bool {
+		return v.ID == id
+	})
+
+	if index < 0 {
+		return nil, errors.New("user not found")
+	}
+
+	r.log.Println("repository get")
+	return &r.db.Users[index], nil
 }
 
 /*

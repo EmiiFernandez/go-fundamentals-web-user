@@ -31,7 +31,7 @@ func main() {
 	ctx := context.Background()
 
 	handler.NewUserHTTPServer(ctx, server, user.MakeEndpoints(ctx, service))
-
+	// Registra un manejador para la ruta "/users" que delega el control a la función MakeEndpoints del paquete user
 	// Imprime un mensaje indicando el puerto donde se inicia el servidor
 	fmt.Println("Server started at port 8080")
 

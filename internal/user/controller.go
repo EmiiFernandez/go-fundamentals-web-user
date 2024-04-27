@@ -2,6 +2,8 @@ package user
 
 import (
 	"context" // Paquete `context`: Proporciona un objeto de contexto para llevar información del ámbito de la solicitud.
+	"fmt"
+
 	// Paquete `encoding/json`: Proporciona funciones para codificar y decodificar datos JSON.
 	"errors"
 	// Paquete `fmt`: Proporciona funciones para el formateo de salida de datos.
@@ -18,6 +20,11 @@ type (
 	Endpoints struct {
 		Create Controller // Campo `Create` de tipo `Controller` que almacena el controlador para el endpoint de creación de usuarios.
 		GetAll Controller // Campo `GetAll` de tipo `Controller` que almacena el controlador para el endpoint de obtención de todos los usuarios.
+		Get    Controller
+	}
+
+	GetReq struct {
+		ID uint64
 	}
 
 	// CreateReq: Define una estructura `CreateReq` para representar la solicitud de creación de un nuevo usuario.
@@ -35,18 +42,7 @@ func MakeEndpoints(ctx context.Context, s Service) Endpoints {
 	return Endpoints{
 		Create: makeCreateEndpoint(s),
 		GetAll: makeGetAllEndpoint(s),
-	}
-}
-
-func makeGetAllEndpoint(s Service) Controller {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-
-		// Esta función recupera todos los usuarios del servicio y los envía como respuesta.
-		users, err := s.GetAll(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return users, nil
+		Get:    makeGetEndopoint(s),
 	}
 }
 
@@ -76,6 +72,31 @@ func makeCreateEndpoint(s Service) Controller {
 		if err != nil {
 			return nil, err
 		}
+		return user, nil
+	}
+}
+
+func makeGetAllEndpoint(s Service) Controller {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+
+		// Esta función recupera todos los usuarios del servicio y los envía como respuesta.
+		users, err := s.GetAll(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return users, nil
+	}
+}
+
+func makeGetEndopoint(s Service) Controller {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(GetReq)
+		user, err := s.Get(ctx, req.ID)
+
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(req)
 		return user, nil
 	}
 }

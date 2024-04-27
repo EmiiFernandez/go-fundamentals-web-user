@@ -1,5 +1,9 @@
 package bootstrap
 
+/*
+El paquete bootstrap se utiliza para inicializar componentes claves antes de que la aplicación principal comience a ejecutars
+*/
+
 import (
 	"log"
 	"os"

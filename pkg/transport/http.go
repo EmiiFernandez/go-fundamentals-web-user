@@ -5,6 +5,7 @@ package transport
 import (
 	"context"
 	"net/http"
+	"strings"
 )
 
 // Define el contrato para un objeto que maneja la ejecución de un endpoint.
@@ -77,4 +78,18 @@ func (t *transport) Server(
 		return
 	}
 
+}
+
+func Clean(url string) ([]string, int) {
+	if url[0] != '/' {
+		url = "/" + url
+	}
+
+	if url[len(url)-1] != '/' {
+		url = url + "/"
+	}
+
+	parts := strings.Split(url, "/")
+
+	return parts, len(parts)
 }
