@@ -2,7 +2,6 @@ package user
 
 import (
 	"context" // El paquete `context` proporciona un objeto de contexto para llevar información del ámbito de la solicitud.
-	"errors"  // El paquete `errors` proporciona funciones para manejar errores.
 	"fmt"     // El paquete `fmt` proporciona funciones para el formateo de salida de datos.
 )
 
@@ -17,6 +16,7 @@ type (
 		Create Controller // Campo `Create` de tipo `Controller` que almacena el controlador para el endpoint de creación de usuarios.
 		GetAll Controller // Campo `GetAll` de tipo `Controller` que almacena el controlador para el endpoint de obtención de todos los usuarios.
 		Get    Controller // Campo `Get` de tipo `Controller` que almacena el controlador para el endpoint de obtención de un usuario por ID.
+		Update Controller // Campo `Update` de tipo `Controller` que almacena el controlador para el endpoint de actualización de un usuario por ID.
 	}
 
 	GetReq struct {
@@ -30,6 +30,14 @@ type (
 		Email     string `json:"email"`      // Campo `Email` de tipo cadena para almacenar el correo electrónico del usuario.
 		// La etiqueta `json:"first_name"` indica la clave que se usará al codificar el campo a JSON.
 	}
+
+	// UpdateReq: Define una estructura `UpdateReq` para representar la solicitud de actualización de un usuario.
+	UpdateReq struct {
+		ID        uint64  // ID del usuario a actualizar
+		FirstName *string `json:"first_name"` // Campo `FirstName` de tipo puntero a cadena para almacenar el nombre del usuario.
+		LastName  *string `json:"last_name"`  // Campo `LastName` de tipo puntero a cadena para almacenar el apellido del usuario.
+		Email     *string `json:"email"`      // Campo `Email` de tipo puntero a cadena para almacenar el correo electrónico del usuario.
+	}
 )
 
 // Funciones del controlador
@@ -40,6 +48,7 @@ func MakeEndpoints(ctx context.Context, s Service) Endpoints {
 		Create: makeCreateEndpoint(s),
 		GetAll: makeGetAllEndpoint(s),
 		Get:    makeGetEndopoint(s),
+		Update: makeUpdateEndpoint(s),
 	}
 }
 
@@ -53,13 +62,10 @@ func makeCreateEndpoint(s Service) Controller {
 
 		// Valida los campos obligatorios de la solicitud (nombre, apellido y correo electrónico).
 		if req.FirstName == "" {
-			return nil, errors.New("first name is required")
+			return nil, ErrFirstNameRequired
 		}
 		if req.LastName == "" {
-			return nil, errors.New("last name is required")
-		}
-		if req.Email == "" {
-			return nil, errors.New("email is required")
+			return nil, ErrLastNameRequired
 		}
 
 		// Llama a la función `Create` del servicio `Service` para crear el nuevo usuario.
@@ -104,6 +110,32 @@ func makeGetEndopoint(s Service) Controller {
 		}
 		fmt.Println(req)
 		return user, nil
+	}
+}
+
+// makeUpdateEndpoint crea un controlador para el endpoint de actualización de un usuario por ID.
+func makeUpdateEndpoint(s Service) Controller {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+
+		// Convierte la interfaz `data` a la estructura `UpdateReq` para acceder a los campos de actualización del usuario.
+		req := request.(UpdateReq)
+
+		// Valida los campos obligatorios de la solicitud (nombre y apellido).
+		if req.FirstName != nil && *req.FirstName == "" {
+			return nil, ErrFirstNameRequired
+		}
+		if req.LastName != nil && *req.LastName == "" {
+			return nil, ErrLastNameRequired
+		}
+
+		// Llama a la función `Update` del servicio `Service` para actualizar los datos del usuario.
+		err := s.Update(ctx, req.ID, req.FirstName, req.LastName, req.Email)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Println(req)
+		return nil, nil
 	}
 }
 

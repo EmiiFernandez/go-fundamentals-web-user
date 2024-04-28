@@ -4,7 +4,7 @@ import (
 	"context" // Paquete `context`: Proporciona un objeto de contexto que lleva información del ámbito de la solicitud.
 	"log"     // Paquete `log`: Proporciona funciones para registrar mensajes.
 
-	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/domain" // Paquete `internal/domain`: Proporciona la estructura `User` utilizada para representar datos de usuario.
+	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/domain"
 )
 
 // Service define la interfaz del servicio de usuarios.
@@ -18,6 +18,9 @@ type Service interface {
 
 	// Get devuelve un usuario específico basado en su ID.
 	Get(ctx context.Context, id uint64) (*domain.User, error)
+
+	// Update actualiza los datos de un usuario existente.
+	Update(ctx context.Context, id uint64, firstName, lastName, email *string) error
 }
 
 // service es una implementación del servicio de usuarios.
@@ -84,6 +87,19 @@ func (s *service) Get(ctx context.Context, id uint64) (*domain.User, error) {
 
 	// Retorna el usuario obtenido del repositorio.
 	return user, nil
+}
+
+// Update actualiza los datos de un usuario existente.
+func (s *service) Update(ctx context.Context, id uint64, firstName, lastName, email *string) error {
+	// Delega la actualización del usuario al repositorio.
+	if err := s.repo.Update(ctx, id, firstName, lastName, email); err != nil {
+		return err
+	}
+
+	// Registra un mensaje en el logger indicando la actualización del usuario.
+	s.log.Println("Se ha actualizado el usuario")
+
+	return nil
 }
 
 /*

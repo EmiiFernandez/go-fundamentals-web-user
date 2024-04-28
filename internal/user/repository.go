@@ -2,9 +2,8 @@ package user
 
 import (
 	"context" // Paquete `context`: Proporciona un objeto de contexto que lleva información del ámbito de la solicitud.
-	"errors"
-	"log" // Paquete `log`: Proporciona funciones para registrar mensajes.
-	"slices"
+	"log"     // Paquete `log`: Proporciona funciones para registrar mensajes.
+	"slices"  // Paquete `slices`: Proporciona funciones para trabajar con slices.
 
 	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/domain" // Paquete `internal/domain`: Proporciona la estructura `User` utilizada para representar datos de usuario.
 )
@@ -23,6 +22,8 @@ type Repository interface {
 	GetAll(ctx context.Context) ([]domain.User, error)
 	// Get devuelve un usuario específico basado en su ID.
 	Get(ctx context.Context, id uint64) (*domain.User, error)
+	// Update actualiza los datos de un usuario existente.
+	Update(ctx context.Context, id uint64, firstName, lastName, email *string) error
 }
 
 // repo es una implementación de la interfaz Repository.
@@ -63,11 +64,33 @@ func (r *repo) Get(ctx context.Context, id uint64) (*domain.User, error) {
 
 	// Si no se encuentra el usuario, devolver un error
 	if index < 0 {
-		return nil, errors.New("user not found")
+		return nil, ErrNotFound{id}
 	}
 
 	r.log.Println("repository get") // Registrar en el logger que se ha obtenido un usuario
 	return &r.db.Users[index], nil  // Devolver el usuario encontrado
+}
+
+// Update actualiza los datos de un usuario existente.
+func (r *repo) Update(ctx context.Context, id uint64, firstName, lastName, email *string) error {
+	user, err := r.Get(ctx, id) // Obtener el usuario existente
+	if err != nil {
+		return err // Devolver el error si el usuario no existe
+	}
+
+	// Actualizar los campos del usuario con los nuevos valores si se proporcionan
+	if firstName != nil {
+		user.FirstName = *firstName
+	}
+	if lastName != nil {
+		user.LastName = *lastName
+	}
+	if email != nil {
+		user.Email = *email
+	}
+
+	r.log.Println("repository update") // Registrar en el logger que se ha actualizado un usuario
+	return nil
 }
 
 /*

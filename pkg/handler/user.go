@@ -57,6 +57,12 @@ func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.Respo
 				end = endpoints.Create
 				deco = decodeCreateUser
 			}
+		case http.MethodPatch:
+			switch pathSize {
+			case 4:
+				end = endpoints.Update
+				deco = decodeUpdateUser
+			}
 		}
 
 		// Si se encontró un controlador y un decodificador válidos, procesa la solicitud
@@ -95,6 +101,36 @@ func decodeGetAllUser(ctx context.Context, r *http.Request) (interface{}, error)
 	return nil, nil
 }
 
+// decodeCreateUser decodifica los datos de la solicitud para crear un nuevo usuario.
+func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error) {
+	var req user.CreateReq
+	// Decodifica el cuerpo JSON de la solicitud en la estructura CreateReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, fmt.Errorf("Invalid request format: '%v'", err.Error())
+	}
+	return req, nil
+}
+
+// decodeUpdateUser decodifica los datos de la solicitud para modificar un atributo del usuario.
+func decodeUpdateUser(ctx context.Context, r *http.Request) (interface{}, error) {
+	var req user.UpdateReq
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, fmt.Errorf("Invalid request format: '%v'", err.Error())
+	}
+
+	params := ctx.Value("params").(map[string]string)
+
+	id, err := strconv.ParseUint(params["userID"], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	req.ID = id
+	return req, nil
+
+}
+
 // encodeResponse codifica la respuesta en formato JSON.
 func encodeResponse(tx context.Context, w http.ResponseWriter, resp interface{}) error {
 	data, err := json.Marshal(resp)
@@ -118,16 +154,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 
 	// Escribe el mensaje de error JSON en el cuerpo de la respuesta HTTP
 	fmt.Fprintf(w, `{"status": %d, "message": "%s"}`, status, err.Error())
-}
-
-// decodeCreateUser decodifica los datos de la solicitud para crear un nuevo usuario.
-func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error) {
-	var req user.CreateReq
-	// Decodifica el cuerpo JSON de la solicitud en la estructura CreateReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, fmt.Errorf("Invalid request format: '%v'", err.Error())
-	}
-	return req, nil
 }
 
 // InvalidMethod envía una respuesta de error cuando el método HTTP no es compatible con el endpoint.
