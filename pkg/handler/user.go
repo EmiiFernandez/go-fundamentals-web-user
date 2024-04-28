@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/EmiiFernandez/go-fundamentals-response/response"
 	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/user"
 	"github.com/EmiiFernandez/go-fundamentals-web-users/pkg/transport"
 )
@@ -22,12 +23,14 @@ func NewUserHTTPServer(ctx context.Context, router *http.ServeMux, endpoints use
 // UserServer maneja las solicitudes HTTP relacionadas con los usuarios.
 func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Registra la URL de la solicitud
 		url := r.URL.Path
 		log.Println(r.Method, ": ", url)
 
 		// Limpia la URL para obtener los parámetros necesarios
 		path, pathSize := transport.Clean(url)
 
+		// Crea un mapa para almacenar los parámetros de la URL
 		params := make(map[string]string)
 		// Si hay un parámetro de ID de usuario en la URL, guárdalo
 		if pathSize == 4 && path[2] != "" {
@@ -128,32 +131,29 @@ func decodeUpdateUser(ctx context.Context, r *http.Request) (interface{}, error)
 
 	req.ID = id
 	return req, nil
-
 }
 
 // encodeResponse codifica la respuesta en formato JSON.
 func encodeResponse(tx context.Context, w http.ResponseWriter, resp interface{}) error {
-	data, err := json.Marshal(resp)
-	if err != nil {
-		return err
-	}
-	status := http.StatusOK
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-	// Escribe la respuesta JSON en el cuerpo de la respuesta HTTP
-	fmt.Fprintf(w, `{"status": %d, "data": %s}`, status, data)
-	return nil
+	r := resp.(response.Response)
+	w.WriteHeader(r.StatusCode())
+	return json.NewEncoder(w).Encode(resp)
 }
 
 // encodeError codifica los errores en formato JSON.
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
-	status := http.StatusInternalServerError
-	w.WriteHeader(status)
+	// Establece el tipo de contenido de la respuesta como JSON
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	// Escribe el mensaje de error JSON en el cuerpo de la respuesta HTTP
-	fmt.Fprintf(w, `{"status": %d, "message": "%s"}`, status, err.Error())
+	// Convierte el error en una respuesta del tipo response.Response
+	resp := err.(response.Response)
+
+	// Establece el código de estado de la respuesta HTTP
+	w.WriteHeader(resp.StatusCode())
+
+	// Codifica el error en formato JSON y lo escribe en el cuerpo de la respuesta HTTP
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // InvalidMethod envía una respuesta de error cuando el método HTTP no es compatible con el endpoint.

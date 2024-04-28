@@ -2,7 +2,10 @@ package user
 
 import (
 	"context" // El paquete `context` proporciona un objeto de contexto para llevar información del ámbito de la solicitud.
-	"fmt"     // El paquete `fmt` proporciona funciones para el formateo de salida de datos.
+	"errors"
+	"fmt" // El paquete `fmt` proporciona funciones para el formateo de salida de datos.
+
+	"github.com/EmiiFernandez/go-fundamentals-response/response"
 )
 
 // Definición de tipos
@@ -62,10 +65,10 @@ func makeCreateEndpoint(s Service) Controller {
 
 		// Valida los campos obligatorios de la solicitud (nombre, apellido y correo electrónico).
 		if req.FirstName == "" {
-			return nil, ErrFirstNameRequired
+			return nil, response.BadRequest(ErrFirstNameRequired.Error())
 		}
 		if req.LastName == "" {
-			return nil, ErrLastNameRequired
+			return nil, response.BadRequest(ErrLastNameRequired.Error())
 		}
 
 		// Llama a la función `Create` del servicio `Service` para crear el nuevo usuario.
@@ -74,22 +77,22 @@ func makeCreateEndpoint(s Service) Controller {
 
 		// Maneja el error en caso de que falle la creación del usuario.
 		if err != nil {
-			return nil, err
+			return nil, response.InternalServerError(err.Error())
 		}
-		return user, nil
+		return response.Created("success", user), nil
 	}
 }
 
 // makeGetAllEndpoint crea un controlador para el endpoint de obtención de todos los usuarios.
 func makeGetAllEndpoint(s Service) Controller {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-
 		// Esta función recupera todos los usuarios del servicio y los envía como respuesta.
+
 		users, err := s.GetAll(ctx)
 		if err != nil {
-			return nil, err
+			return nil, response.InternalServerError(err.Error())
 		}
-		return users, nil
+		return response.OK("success", users), nil
 	}
 }
 
@@ -106,36 +109,41 @@ func makeGetEndopoint(s Service) Controller {
 
 		// Maneja el error en caso de que falle la obtención del usuario.
 		if err != nil {
-			return nil, err
+			if errors.As(err, &ErrNotFound{}) {
+				return nil, response.NotFound(err.Error())
+			}
+			return nil, response.InternalServerError(err.Error())
 		}
 		fmt.Println(req)
-		return user, nil
+		return response.OK("success", user), nil
 	}
 }
 
 // makeUpdateEndpoint crea un controlador para el endpoint de actualización de un usuario por ID.
 func makeUpdateEndpoint(s Service) Controller {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		// Esta función maneja las solicitudes PATCH para actualizar un usuario por su ID.
 
 		// Convierte la interfaz `data` a la estructura `UpdateReq` para acceder a los campos de actualización del usuario.
 		req := request.(UpdateReq)
 
 		// Valida los campos obligatorios de la solicitud (nombre y apellido).
 		if req.FirstName != nil && *req.FirstName == "" {
-			return nil, ErrFirstNameRequired
+			return nil, response.BadRequest(ErrFirstNameRequired.Error())
 		}
 		if req.LastName != nil && *req.LastName == "" {
-			return nil, ErrLastNameRequired
+			return nil, response.BadRequest(ErrLastNameRequired.Error())
 		}
 
 		// Llama a la función `Update` del servicio `Service` para actualizar los datos del usuario.
-		err := s.Update(ctx, req.ID, req.FirstName, req.LastName, req.Email)
-		if err != nil {
-			return nil, err
+		if err := s.Update(ctx, req.ID, req.FirstName, req.LastName, req.Email); err != nil {
+			if errors.As(err, &ErrNotFound{}) {
+				return nil, response.NotFound(err.Error())
+			}
+			return nil, response.InternalServerError(err.Error())
 		}
-
 		fmt.Println(req)
-		return nil, nil
+		return response.OK("success", nil), nil
 	}
 }
 
