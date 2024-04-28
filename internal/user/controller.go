@@ -1,13 +1,9 @@
 package user
 
 import (
-	"context" // Paquete `context`: Proporciona un objeto de contexto para llevar información del ámbito de la solicitud.
-	"fmt"
-
-	// Paquete `encoding/json`: Proporciona funciones para codificar y decodificar datos JSON.
-	"errors"
-	// Paquete `fmt`: Proporciona funciones para el formateo de salida de datos.
-	// Paquete `net/http`: Proporciona funciones para crear servidores HTTP.
+	"context" // El paquete `context` proporciona un objeto de contexto para llevar información del ámbito de la solicitud.
+	"errors"  // El paquete `errors` proporciona funciones para manejar errores.
+	"fmt"     // El paquete `fmt` proporciona funciones para el formateo de salida de datos.
 )
 
 // Definición de tipos
@@ -20,11 +16,11 @@ type (
 	Endpoints struct {
 		Create Controller // Campo `Create` de tipo `Controller` que almacena el controlador para el endpoint de creación de usuarios.
 		GetAll Controller // Campo `GetAll` de tipo `Controller` que almacena el controlador para el endpoint de obtención de todos los usuarios.
-		Get    Controller
+		Get    Controller // Campo `Get` de tipo `Controller` que almacena el controlador para el endpoint de obtención de un usuario por ID.
 	}
 
 	GetReq struct {
-		ID uint64
+		ID uint64 // ID del usuario a obtener
 	}
 
 	// CreateReq: Define una estructura `CreateReq` para representar la solicitud de creación de un nuevo usuario.
@@ -38,6 +34,7 @@ type (
 
 // Funciones del controlador
 
+// MakeEndpoints crea los endpoints (rutas) de la API y asigna los controladores correspondientes.
 func MakeEndpoints(ctx context.Context, s Service) Endpoints {
 	return Endpoints{
 		Create: makeCreateEndpoint(s),
@@ -46,6 +43,7 @@ func MakeEndpoints(ctx context.Context, s Service) Endpoints {
 	}
 }
 
+// makeCreateEndpoint crea un controlador para el endpoint de creación de usuarios.
 func makeCreateEndpoint(s Service) Controller {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		// Esta función maneja las solicitudes POST para crear un nuevo usuario en la API de usuarios.
@@ -76,6 +74,7 @@ func makeCreateEndpoint(s Service) Controller {
 	}
 }
 
+// makeGetAllEndpoint crea un controlador para el endpoint de obtención de todos los usuarios.
 func makeGetAllEndpoint(s Service) Controller {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 
@@ -88,11 +87,18 @@ func makeGetAllEndpoint(s Service) Controller {
 	}
 }
 
+// makeGetEndopoint crea un controlador para el endpoint de obtención de un usuario por ID.
 func makeGetEndopoint(s Service) Controller {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		// Esta función maneja las solicitudes GET para obtener un usuario por su ID.
+
+		// Convierte la interfaz `data` a la estructura `GetReq` para acceder al ID del usuario.
 		req := request.(GetReq)
+
+		// Llama a la función `Get` del servicio `Service` para obtener el usuario por su ID.
 		user, err := s.Get(ctx, req.ID)
 
+		// Maneja el error en caso de que falle la obtención del usuario.
 		if err != nil {
 			return nil, err
 		}
@@ -104,10 +110,10 @@ func makeGetEndopoint(s Service) Controller {
 /*
 Capa de presentación (Controller):
 
-Función: Esta capa se encarga de interactuar directamente con el usuario o cliente.
+Función: La capa de presentación interactúa directamente con el usuario o cliente.
 Maneja las solicitudes HTTP: Recibe las solicitudes del cliente, las analiza y las valida.
 Decodifica los datos: Convierte los datos recibidos en el formato adecuado para su procesamiento.
 Llama a la capa de servicio: Delega la lógica de negocio a la capa de servicio.
 Codifica las respuestas: Convierte los resultados de la capa de servicio en formato JSON o HTML para enviar al cliente.
-Envíe las respuestas: Envía las respuestas al cliente junto con el código de estado HTTP correspondiente.
+Envía las respuestas: Envía las respuestas al cliente junto con el código de estado HTTP correspondiente.
 */

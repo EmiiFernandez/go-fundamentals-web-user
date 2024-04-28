@@ -13,6 +13,7 @@ import (
 
 func main() {
 	// Crea un nuevo multiplexor para manejar las solicitudes HTTP
+	// el multiplexor decide a qué función o controlador debe enviar esa solicitud para ser procesada
 	server := http.NewServeMux()
 
 	// Simulación de una base de datos en memoria
@@ -30,25 +31,26 @@ func main() {
 	// Crea un contexto de fondo para las solicitudes HTTP
 	ctx := context.Background()
 
+	// Configura el servidor HTTP para manejar las solicitudes relacionadas con usuarios
 	handler.NewUserHTTPServer(ctx, server, user.MakeEndpoints(ctx, service))
-	// Registra un manejador para la ruta "/users" que delega el control a la función MakeEndpoints del paquete user
+
 	// Imprime un mensaje indicando el puerto donde se inicia el servidor
 	fmt.Println("Server started at port 8080")
 
-	// Inicia el servidor HTTP en el puerto 8080 y registra cualquier error fatal
+	// Inicia el servidor HTTP en el puerto 8080 y maneja cualquier error fatal
 	log.Fatal(http.ListenAndServe(":8080", server))
 }
 
 /*
 Funcionamiento de la arquitectura:
 
-Solicitud del cliente: El usuario envía una solicitud HTTP a la aplicación, por ejemplo, a través de un navegador web o una API externa.
-Capa de presentación: El controlador recibe la solicitud, la analiza y valida los datos recibidos.
-Decodificación y validación: Los datos se decodifican del formato HTTP (JSON, HTML, etc.) a estructuras de datos Go y se valida su integridad.
-Llamada al servicio: El controlador llama al servicio correspondiente para realizar la operación de negocio solicitada.
-Lógica de negocio: El servicio aplica las reglas de negocio, procesa los datos y llama al repositorio para acceder a la fuente de datos.
-Acceso a datos: El repositorio realiza las operaciones CRUD necesarias sobre la base de datos o el sistema de almacenamiento.
-Preparación de la respuesta: El servicio recibe los resultados del repositorio y los procesa para construir la respuesta.
-Codificación y envío: El controlador codifica la respuesta en formato JSON o HTML y la envía al cliente junto con el código de estado HTTP correspondiente.
-Recepción de la respuesta: El cliente recibe la respuesta y la procesa según el tipo de contenido y el código de estado.
+1. Solicitud del cliente: El usuario envía una solicitud HTTP a la aplicación, por ejemplo, a través de un navegador web o una API externa.
+2. Capa de presentación: El controlador recibe la solicitud, la analiza y valida los datos recibidos.
+3. Decodificación y validación: Los datos se decodifican del formato HTTP (JSON, HTML, etc.) a estructuras de datos Go y se valida su integridad.
+4. Llamada al servicio: El controlador llama al servicio correspondiente para realizar la operación de negocio solicitada.
+5. Lógica de negocio: El servicio aplica las reglas de negocio, procesa los datos y llama al repositorio para acceder a la fuente de datos.
+6. Acceso a datos: El repositorio realiza las operaciones CRUD necesarias sobre la base de datos o el sistema de almacenamiento.
+7. Preparación de la respuesta: El servicio recibe los resultados del repositorio y los procesa para construir la respuesta.
+8. Codificación y envío: El controlador codifica la respuesta en formato JSON o HTML y la envía al cliente junto con el código de estado HTTP correspondiente.
+9. Recepción de la respuesta: El cliente recibe la respuesta y la procesa según el tipo de contenido y el código de estado.
 */

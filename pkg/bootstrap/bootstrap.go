@@ -1,7 +1,7 @@
 package bootstrap
 
 /*
-El paquete bootstrap se utiliza para inicializar componentes claves antes de que la aplicación principal comience a ejecutars
+Package bootstrap proporciona funciones para inicializar componentes clave antes de que la aplicación principal comience a ejecutarse.
 */
 
 import (
@@ -12,12 +12,12 @@ import (
 	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/user"
 )
 
-// Crea y devuelve un objeto *log.Logger que se utiliza para registrar mensajes en la consola.
+// NewLogger crea y devuelve un objeto *log.Logger que se utiliza para registrar mensajes en la consola.
 func NewLogger() *log.Logger {
 	return log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
 }
 
-// Crea y devuelve una instancia de user.DB que representa la base de datos de usuarios.
+// NewDB crea y devuelve una instancia de user.DB que representa la base de datos de usuarios, con datos simulados predefinidos.
 func NewBD() user.DB {
 	return user.DB{
 		Users: []domain.User{
