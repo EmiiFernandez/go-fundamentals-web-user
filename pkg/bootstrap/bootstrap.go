@@ -5,11 +5,11 @@ Package bootstrap proporciona funciones para inicializar componentes clave antes
 */
 
 import (
+	"database/sql"
 	"log"
 	"os"
 
-	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/domain"
-	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/user"
+	_ "github.com/go-sql-driver/mysql" // _ lo importo pero no lo uso
 )
 
 // NewLogger crea y devuelve un objeto *log.Logger que se utiliza para registrar mensajes en la consola.
@@ -17,9 +17,19 @@ func NewLogger() *log.Logger {
 	return log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
 }
 
-// NewDB crea y devuelve una instancia de user.DB que representa la base de datos de usuarios, con datos simulados predefinidos.
-func NewBD() user.DB {
-	return user.DB{
+// NewBD inicializa y devuelve una conexión a la base de datos MySQL.
+func NewBD() (*sql.DB, error) {
+	// Abre una conexión a la base de datos MySQL utilizando las credenciales y la cadena de conexión proporcionadas.
+	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3336)/go_course_users")
+	if err != nil {
+		return nil, err // Devuelve nil y el error si la conexión falla
+	}
+
+	return db, nil // Devuelve la conexión a la base de datos y ningún error si es exitosa
+}
+
+/*
+return user.DB{
 		Users: []domain.User{
 			{ID: 1, FirstName: "Nahuel", LastName: "Costamagna", Email: "nahuel@domain.com"},
 			{ID: 2, FirstName: "Eren", LastName: "Jaeger", Email: "eren@domain.com"},
@@ -27,4 +37,4 @@ func NewBD() user.DB {
 		},
 		MaxUserID: 3,
 	}
-}
+*/

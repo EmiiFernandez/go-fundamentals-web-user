@@ -1,0 +1,15 @@
+version: "3.8"  # Versión de la especificación de Docker Compose utilizada en este archivo.
+services:  # Definición de los servicios de contenedor que serán ejecutados.
+  go-course-users:  # Nombre del servicio de contenedor.
+    platform: linux/amd64  # Plataforma en la que se ejecutará el contenedor.
+    container_name: go-course-users  # Nombre del contenedor.
+    build:  # Configuración para construir la imagen del contenedor.
+      context: ./.dockers/mysql  # Ruta al contexto de construcción (directorios y archivos necesarios para la construcción).
+      dockerfile: Dockerfile  # Nombre del archivo Dockerfile que se utilizará para construir la imagen.
+    environment:  # Variables de entorno para configurar el contenedor.
+      MYSQL_ROOT_PASSWORD: root  # Contraseña del usuario root de MySQL.
+      MYSQL_DATABASE: go_course_users  # Nombre de la base de datos MySQL.
+    ports:  # Mapeo de puertos entre el host y el contenedor.
+      - 3336:3306  # Puerto del host: Puerto del contenedor (puerto 3336 del host se mapea al puerto 3306 del contenedor).
+    volumes:  # Volumen(es) montados en el contenedor.
+      - ./.docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql  # Mapeo de un archivo desde el host al contenedor.

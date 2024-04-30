@@ -16,8 +16,17 @@ func main() {
 	// el multiplexor decide a qué función o controlador debe enviar esa solicitud para ser procesada
 	server := http.NewServeMux()
 
-	// Simulación de una base de datos en memoria
-	db := bootstrap.NewBD()
+	// Conexión a la base de datos MySQL utilizando Docker
+	db, err := bootstrap.NewBD()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close() // Cerrar la conexión a la base de datos al finalizar
+
+	// Verifica la conexión con la base de datos MySQL
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	}
 
 	// Crea un logger para registrar mensajes en la salida estándar
 	logger := bootstrap.NewLogger()
