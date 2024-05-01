@@ -42,18 +42,58 @@ func NewRepo(db *sql.DB, l *log.Logger) Repository {
 }
 
 // Create crea un nuevo usuario en la base de datos.
-func (r *repo) Create(ctx context.Context, user *domain.User) error {
-	/*r.db.MaxUserID++                       // Incrementar el ID máximo
+/*
+	BD en memoria
+	r.db.MaxUserID++                       // Incrementar el ID máximo
 	user.ID = r.db.MaxUserID               // Asignar el nuevo ID al usuario
 	r.db.Users = append(r.db.Users, *user) // Agregar el usuario a la lista de usuarios en la base de datos
 	r.log.Println("repository create")     // Registrar en el logger que se ha creado un nuevo usuario
-	*/return nil
+*/
+func (r *repo) Create(ctx context.Context, user *domain.User) error {
+	sqlQ := "INSERT INTO users(first_name, last_name, email) VALUES(?,?,?)"
+	//id autoincremental
+	res, err := r.db.Exec(sqlQ, user.FirstName, user.LastName, user.Email)
+	if err != nil {
+		r.log.Println(err.Error())
+		return err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		r.log.Println(err.Error())
+		return err
+	}
+
+	user.ID = uint64(id)
+	r.log.Println("user created with id: ", id)
+	//r.log.Println("repository create")
+	return nil
 }
 
 // GetAll devuelve todos los usuarios almacenados en la base de datos.
 func (r *repo) GetAll(ctx context.Context) ([]domain.User, error) {
-	r.log.Println("repository get all") // Registrar en el logger que se está obteniendo la lista de usuarios
-	return nil, nil                     // Devolver la lista de usuarios
+
+	var users []domain.User
+	sqlQ := "SELECT id, first_name, last_name, email FROM users"
+	rows, err := r.db.Query(sqlQ)
+	if err != nil {
+		r.log.Println(err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var u domain.User
+		if err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
+
+			r.log.Println(err.Error())
+			return nil, err
+		}
+		users = append(users, u)
+	}
+
+	//r.log.Println("repository get all")
+	r.log.Println("user get all: ", len(users)) // Registrar en el logger que se está obteniendo la lista de usuarios
+	return users, nil                           // Devolver la lista de usuarios
 }
 
 // Get devuelve un usuario específico basado en su ID.
