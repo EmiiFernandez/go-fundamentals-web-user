@@ -5,11 +5,14 @@ import (
 	"fmt"
 )
 
-// ErrFirstNameRequired es un error que se produce cuando se intenta crear un usuario sin proporcionar un nombre.
+// ErrFirstNameRequired se produce cuando se intenta crear un usuario sin proporcionar un nombre.
 var ErrFirstNameRequired = errors.New("first name ir required")
 
-// ErrLastNameRequired es un error que se produce cuando se intenta crear un usuario sin proporcionar un apellido.
+// ErrLastNameRequired se produce cuando se intenta crear un usuario sin proporcionar un apellido.
 var ErrLastNameRequired = errors.New("last name ir required")
+
+// ErrThereArentFields se utiliza cuando no se proporcionan campos para actualizar en la función Update del repositorio de usuarios.
+var ErrThereArentFields = errors.New("there aren't fields")
 
 // ErrNotFound es una estructura de error personalizada que se utiliza cuando no se encuentra un usuario en la base de datos.
 type ErrNotFound struct {
