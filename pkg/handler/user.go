@@ -3,9 +3,11 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/EmiiFernandez/go-fundamentals-response/response"
@@ -36,6 +38,9 @@ func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.Respo
 		if pathSize == 4 && path[2] != "" {
 			params["userID"] = path[2]
 		}
+
+		// Se asigna el valor del encabezado "Authorization" de la solicitud HTTP a la clave "token" en el mapa de parámetros.
+		params["token"] = r.Header.Get("Authorization")
 
 		// Crea un nuevo objeto transport para manejar la solicitud y la respuesta
 		tran := transport.New(w, r, context.WithValue(ctx, "params", params))
@@ -85,11 +90,14 @@ func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.Respo
 
 // decodeGetUser decodifica los parámetros de la solicitud para obtener el ID del usuario.
 func decodeGetUser(ctx context.Context, r *http.Request) (interface{}, error) {
+	// Se obtienen los parámetros del contexto y se realiza un tipo assert para convertirlos en un mapa de cadenas clave-valor.
 	params := ctx.Value("params").(map[string]string)
 
+	// Se intenta convertir el valor asociado a la clave "userID" en el mapa de parámetros a un número entero sin signo de 64 bits.
 	id, err := strconv.ParseUint(params["userID"], 10, 64)
 	if err != nil {
-		return nil, err
+		// Si ocurre un error durante la conversión, se devuelve un error de solicitud incorrecta con detalles del error.
+		return nil, response.BadRequest(err.Error())
 	}
 
 	// Retorna un objeto GetReq que contiene el ID del usuario
@@ -100,37 +108,81 @@ func decodeGetUser(ctx context.Context, r *http.Request) (interface{}, error) {
 
 // decodeGetAllUser decodifica los parámetros de la solicitud para obtener todos los usuarios.
 func decodeGetAllUser(ctx context.Context, r *http.Request) (interface{}, error) {
+	// Se obtienen los parámetros del contexto y se realiza un tipo assert para convertirlos en un mapa de cadenas clave-valor.
+	params := ctx.Value("params").(map[string]string)
+
+	// Se verifica el token obtenido del mapa de parámetros utilizando la función tokenVerify.
+	// Si hay un error al verificar el token, se devuelve una respuesta de error de autorización.
+	if err := tokenVerify(params["token"]); err != nil {
+		return nil, response.Unauthorized(err.Error())
+	}
+
 	// No se necesitan parámetros adicionales para obtener todos los usuarios
 	return nil, nil
 }
 
 // decodeCreateUser decodifica los datos de la solicitud para crear un nuevo usuario.
 func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error) {
+	// Se obtienen los parámetros del contexto y se realiza un tipo assert para convertirlos en un mapa de cadenas clave-valor.
+	params := ctx.Value("params").(map[string]string)
+
+	// Se verifica el token obtenido del mapa de parámetros utilizando la función tokenVerify.
+	// Si hay un error al verificar el token, se devuelve una respuesta de error de autorización.
+	if err := tokenVerify(params["token"]); err != nil {
+		return nil, response.Unauthorized(err.Error())
+	}
+
 	var req user.CreateReq
 	// Decodifica el cuerpo JSON de la solicitud en la estructura CreateReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, fmt.Errorf("Invalid request format: '%v'", err.Error())
+		// Si hay un error durante la decodificación, se devuelve un error de solicitud incorrecta con detalles del error.
+		return nil, response.BadRequest(fmt.Sprintf("Invalid request format: '%v'", err.Error()))
 	}
 	return req, nil
 }
 
 // decodeUpdateUser decodifica los datos de la solicitud para modificar un atributo del usuario.
 func decodeUpdateUser(ctx context.Context, r *http.Request) (interface{}, error) {
+	// Se declara una variable para contener los datos de la solicitud de actualización del usuario.
 	var req user.UpdateReq
 
+	// Se decodifican los datos JSON de la solicitud en la estructura user.UpdateReq.
+	// Si hay un error durante la decodificación, se devuelve un error de solicitud incorrecta con detalles del error.
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, fmt.Errorf("Invalid request format: '%v'", err.Error())
+		return nil, response.BadRequest(fmt.Sprintf("Invalid request format: '%v'", err.Error()))
 	}
 
+	// Se obtienen los parámetros del contexto y se realiza un tipo assert para convertirlos en un mapa de cadenas clave-valor.
 	params := ctx.Value("params").(map[string]string)
 
-	id, err := strconv.ParseUint(params["userID"], 10, 64)
-	if err != nil {
-		return nil, err
+	// Se verifica el token obtenido del mapa de parámetros utilizando la función tokenVerify.
+	// Si hay un error al verificar el token, se devuelve una respuesta de error de autorización.
+	if err := tokenVerify(params["token"]); err != nil {
+		return nil, response.Unauthorized(err.Error())
 	}
 
+	// Se convierte el ID de usuario de tipo cadena a tipo uint64 para usarlo en la solicitud de actualización.
+	id, err := strconv.ParseUint(params["userID"], 10, 64)
+	if err != nil {
+		return nil, response.BadRequest(err.Error()) // Se devuelve un error si no se puede convertir el ID a uint64.
+	}
+
+	// Se asigna el ID de usuario convertido a la solicitud de actualización antes de devolverla.
 	req.ID = id
-	return req, nil
+	return req, nil // Se devuelve la solicitud de actualización decodificada y sin errores.
+}
+
+// tokenVerify verifica si el token proporcionado coincide con el token almacenado en las variables de entorno.
+// Si el token no coincide, devuelve un error.
+func tokenVerify(token string) error {
+	// Compara el token proporcionado con el token almacenado en las variables de entorno.
+	// Si no coinciden, devuelve un error de "token inválido".
+	if os.Getenv("TOKEN") != token {
+		return errors.New("invalid token")
+	}
+
+	// Si los tokens coinciden, devuelve nil (sin error).
+	return nil
 }
 
 // encodeResponse codifica la respuesta en formato JSON.
