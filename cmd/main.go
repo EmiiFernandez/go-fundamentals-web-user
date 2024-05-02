@@ -5,13 +5,19 @@ import (
 	"fmt"      // Paquete para formateo de salida
 	"log"      // Paquete para registro de errores
 	"net/http" // Paquete para crear servidores HTTP
+	"os"
 
 	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/user"
 	"github.com/EmiiFernandez/go-fundamentals-web-users/pkg/bootstrap"
 	"github.com/EmiiFernandez/go-fundamentals-web-users/pkg/handler"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	//Importo las variables de entorno
+	//por defecto toma el archivo .env. Si cambio el nombre del archivo si necesitaria agregarlo al Load
+	_ = godotenv.Load()
+
 	// Crea un nuevo multiplexor para manejar las solicitudes HTTP
 	// el multiplexor decide a qué función o controlador debe enviar esa solicitud para ser procesada
 	server := http.NewServeMux()
@@ -43,11 +49,13 @@ func main() {
 	// Configura el servidor HTTP para manejar las solicitudes relacionadas con usuarios
 	handler.NewUserHTTPServer(ctx, server, user.MakeEndpoints(ctx, service))
 
+	//Importo el puerto desde las variables de entorno
+	port := os.Getenv("PORT")
 	// Imprime un mensaje indicando el puerto donde se inicia el servidor
-	fmt.Println("Server started at port 8080")
+	fmt.Println("Server started at port ", port)
 
 	// Inicia el servidor HTTP en el puerto 8080 y maneja cualquier error fatal
-	log.Fatal(http.ListenAndServe(":8080", server))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), server))
 }
 
 /*

@@ -19,8 +19,11 @@ func NewLogger() *log.Logger {
 
 // NewBD inicializa y devuelve una conexión a la base de datos MySQL.
 func NewBD() (*sql.DB, error) {
+	// Construye la cadena de conexión utilizando las variables de entorno para las credenciales y la configuración de la base de datos.
+	dbURL := os.ExpandEnv("$DATABASE_USER:$DATABASE_PASSWORD@tcp($DATABASE_HOST:$DATABASE_PORT)/$DATABASE_NAME")
+
 	// Abre una conexión a la base de datos MySQL utilizando las credenciales y la cadena de conexión proporcionadas.
-	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3336)/go_course_users")
+	db, err := sql.Open("mysql", dbURL)
 	if err != nil {
 		return nil, err // Devuelve nil y el error si la conexión falla
 	}
