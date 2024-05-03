@@ -26,3 +26,11 @@ Para ejecutar la aplicación, sigue estos pasos:
 5. Ejecuta la aplicación: `go run cmd/main.go`
 
 La aplicación se ejecutará en `http://localhost:8080` por defecto
+
+## Rutas
+
+- **GET** /users: Obtiene todos los usuarios almacenados en la base de datos.
+- **GET** /users/:id: Obtiene un usuario específico por su ID.
+- **POST** /users: Crea un nuevo usuario con los datos proporcionados.
+- **PATCH** /users/:id: Actualiza los datos de un usuario existente.
+- **DELETE** /users/:id: Elimina un usuario específico por su ID.
