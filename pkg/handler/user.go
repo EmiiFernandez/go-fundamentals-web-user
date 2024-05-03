@@ -1,11 +1,9 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -13,161 +11,110 @@ import (
 	"github.com/EmiiFernandez/go-fundamentals-response/response"
 	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/user"
 	"github.com/EmiiFernandez/go-fundamentals-web-users/pkg/transport"
+	"github.com/gin-gonic/gin"
 )
 
-// NewUserHTTPServer configura las rutas del servidor HTTP para los endpoints de usuarios.
-func NewUserHTTPServer(ctx context.Context, router *http.ServeMux, endpoints user.Endpoints) {
-	// Configura las rutas de los endpoints para el servidor HTTP
-	router.HandleFunc("/users", UserServer(ctx, endpoints))
-	router.HandleFunc("/users/", UserServer(ctx, endpoints))
-}
+// NewUserHTTPServer configura un servidor HTTP utilizando Gin para los endpoints relacionados con usuarios.
+func NewUserHTTPServer(endpoints user.Endpoints) http.Handler {
+	// Se crea un nuevo enrutador Gin con la configuración predeterminada.
+	r := gin.Default()
 
-// UserServer maneja las solicitudes HTTP relacionadas con los usuarios.
-func UserServer(ctx context.Context, endpoints user.Endpoints) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Registra la URL de la solicitud
-		url := r.URL.Path
-		log.Println(r.Method, ": ", url)
+	// Configuración de los endpoints para crear, obtener todos, obtener uno y actualizar usuarios.
+	r.POST("/users", transport.GinServer(
+		transport.Endpoint(endpoints.Create),
+		decodeCreateUser,
+		encodeResponse,
+		encodeError,
+	))
+	r.GET("/users", transport.GinServer(
+		transport.Endpoint(endpoints.GetAll),
+		decodeGetAllUser,
+		encodeResponse,
+		encodeError,
+	))
+	r.GET("/users/:id", transport.GinServer(
+		transport.Endpoint(endpoints.Get),
+		decodeGetUser,
+		encodeResponse,
+		encodeError,
+	))
+	r.PATCH("/users/:id", transport.GinServer(
+		transport.Endpoint(endpoints.Update),
+		decodeUpdateUser,
+		encodeResponse,
+		encodeError,
+	))
 
-		// Limpia la URL para obtener los parámetros necesarios
-		path, pathSize := transport.Clean(url)
-
-		// Crea un mapa para almacenar los parámetros de la URL
-		params := make(map[string]string)
-		// Si hay un parámetro de ID de usuario en la URL, guárdalo
-		if pathSize == 4 && path[2] != "" {
-			params["userID"] = path[2]
-		}
-
-		// Se asigna el valor del encabezado "Authorization" de la solicitud HTTP a la clave "token" en el mapa de parámetros.
-		params["token"] = r.Header.Get("Authorization")
-
-		// Crea un nuevo objeto transport para manejar la solicitud y la respuesta
-		tran := transport.New(w, r, context.WithValue(ctx, "params", params))
-
-		var end user.Controller
-		var deco func(ctx context.Context, r *http.Request) (interface{}, error)
-
-		// Determina el controlador y el decodificador adecuados según el método y la ruta de la solicitud
-		switch r.Method {
-		case http.MethodGet:
-			switch pathSize {
-			case 3:
-				end = endpoints.GetAll
-				deco = decodeGetAllUser
-			case 4:
-				end = endpoints.Get
-				deco = decodeGetUser
-			}
-		case http.MethodPost:
-			switch pathSize {
-			case 3:
-				end = endpoints.Create
-				deco = decodeCreateUser
-			}
-		case http.MethodPatch:
-			switch pathSize {
-			case 4:
-				end = endpoints.Update
-				deco = decodeUpdateUser
-			}
-		}
-
-		// Si se encontró un controlador y un decodificador válidos, procesa la solicitud
-		if end != nil && deco != nil {
-			tran.Server(
-				transport.Endpoint(end),
-				deco,
-				encodeResponse,
-				encodeError,
-			)
-		} else {
-			// Si no se encontró un método válido, devuelve un error
-			InvalidMethod(w)
-		}
-	}
+	return r // Retorna el enrutador Gin como un manejador HTTP.
 }
 
 // decodeGetUser decodifica los parámetros de la solicitud para obtener el ID del usuario.
-func decodeGetUser(ctx context.Context, r *http.Request) (interface{}, error) {
-	// Se obtienen los parámetros del contexto y se realiza un tipo assert para convertirlos en un mapa de cadenas clave-valor.
-	params := ctx.Value("params").(map[string]string)
+func decodeGetUser(c *gin.Context) (interface{}, error) {
+	// Verifica si el token de autorización es válido.
+	if err := tokenVerify(c.Request.Header.Get("Authorization")); err != nil {
+		return nil, response.Unauthorized(err.Error())
+	}
 
-	// Se intenta convertir el valor asociado a la clave "userID" en el mapa de parámetros a un número entero sin signo de 64 bits.
-	id, err := strconv.ParseUint(params["userID"], 10, 64)
+	// Obtiene el ID del usuario de los parámetros de la URL.
+	id, err := strconv.ParseUint(c.Params.ByName("id"), 10, 64)
 	if err != nil {
-		// Si ocurre un error durante la conversión, se devuelve un error de solicitud incorrecta con detalles del error.
 		return nil, response.BadRequest(err.Error())
 	}
 
-	// Retorna un objeto GetReq que contiene el ID del usuario
+	// Retorna un objeto GetReq que contiene el ID del usuario.
 	return user.GetReq{
 		ID: id,
 	}, nil
 }
 
 // decodeGetAllUser decodifica los parámetros de la solicitud para obtener todos los usuarios.
-func decodeGetAllUser(ctx context.Context, r *http.Request) (interface{}, error) {
-	// Se obtienen los parámetros del contexto y se realiza un tipo assert para convertirlos en un mapa de cadenas clave-valor.
-	params := ctx.Value("params").(map[string]string)
-
-	// Se verifica el token obtenido del mapa de parámetros utilizando la función tokenVerify.
-	// Si hay un error al verificar el token, se devuelve una respuesta de error de autorización.
-	if err := tokenVerify(params["token"]); err != nil {
+func decodeGetAllUser(c *gin.Context) (interface{}, error) {
+	// Verifica si el token de autorización es válido.
+	if err := tokenVerify(c.Request.Header.Get("Authorization")); err != nil {
 		return nil, response.Unauthorized(err.Error())
 	}
 
-	// No se necesitan parámetros adicionales para obtener todos los usuarios
+	// No se necesitan parámetros adicionales para obtener todos los usuarios.
 	return nil, nil
 }
 
 // decodeCreateUser decodifica los datos de la solicitud para crear un nuevo usuario.
-func decodeCreateUser(ctx context.Context, r *http.Request) (interface{}, error) {
-	// Se obtienen los parámetros del contexto y se realiza un tipo assert para convertirlos en un mapa de cadenas clave-valor.
-	params := ctx.Value("params").(map[string]string)
-
-	// Se verifica el token obtenido del mapa de parámetros utilizando la función tokenVerify.
-	// Si hay un error al verificar el token, se devuelve una respuesta de error de autorización.
-	if err := tokenVerify(params["token"]); err != nil {
+func decodeCreateUser(c *gin.Context) (interface{}, error) {
+	// Verifica si el token de autorización es válido.
+	if err := tokenVerify(c.Request.Header.Get("Authorization")); err != nil {
 		return nil, response.Unauthorized(err.Error())
 	}
 
+	// Decodifica el cuerpo JSON de la solicitud en la estructura CreateReq.
 	var req user.CreateReq
-	// Decodifica el cuerpo JSON de la solicitud en la estructura CreateReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		// Si hay un error durante la decodificación, se devuelve un error de solicitud incorrecta con detalles del error.
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 		return nil, response.BadRequest(fmt.Sprintf("Invalid request format: '%v'", err.Error()))
 	}
 	return req, nil
 }
 
 // decodeUpdateUser decodifica los datos de la solicitud para modificar un atributo del usuario.
-func decodeUpdateUser(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeUpdateUser(c *gin.Context) (interface{}, error) {
 	// Se declara una variable para contener los datos de la solicitud de actualización del usuario.
 	var req user.UpdateReq
 
-	// Se decodifican los datos JSON de la solicitud en la estructura user.UpdateReq.
-	// Si hay un error durante la decodificación, se devuelve un error de solicitud incorrecta con detalles del error.
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// Decodifica los datos JSON de la solicitud en la estructura user.UpdateReq.
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 		return nil, response.BadRequest(fmt.Sprintf("Invalid request format: '%v'", err.Error()))
 	}
 
-	// Se obtienen los parámetros del contexto y se realiza un tipo assert para convertirlos en un mapa de cadenas clave-valor.
-	params := ctx.Value("params").(map[string]string)
-
-	// Se verifica el token obtenido del mapa de parámetros utilizando la función tokenVerify.
-	// Si hay un error al verificar el token, se devuelve una respuesta de error de autorización.
-	if err := tokenVerify(params["token"]); err != nil {
+	// Verifica si el token de autorización es válido.
+	if err := tokenVerify(c.Request.Header.Get("Authorization")); err != nil {
 		return nil, response.Unauthorized(err.Error())
 	}
 
-	// Se convierte el ID de usuario de tipo cadena a tipo uint64 para usarlo en la solicitud de actualización.
-	id, err := strconv.ParseUint(params["userID"], 10, 64)
+	// Convierte el ID de usuario de tipo cadena a tipo uint64 para usarlo en la solicitud de actualización.
+	id, err := strconv.ParseUint(c.Params.ByName("id"), 10, 64)
 	if err != nil {
 		return nil, response.BadRequest(err.Error()) // Se devuelve un error si no se puede convertir el ID a uint64.
 	}
 
-	// Se asigna el ID de usuario convertido a la solicitud de actualización antes de devolverla.
+	// Asigna el ID de usuario convertido a la solicitud de actualización antes de devolverla.
 	req.ID = id
 	return req, nil // Se devuelve la solicitud de actualización decodificada y sin errores.
 }
@@ -186,38 +133,16 @@ func tokenVerify(token string) error {
 }
 
 // encodeResponse codifica la respuesta en formato JSON.
-func encodeResponse(tx context.Context, w http.ResponseWriter, resp interface{}) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+func encodeResponse(c *gin.Context, resp interface{}) {
+	// Obtiene la respuesta como una estructura de respuesta genérica.
 	r := resp.(response.Response)
-	w.WriteHeader(r.StatusCode())
-	return json.NewEncoder(w).Encode(resp)
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.JSON(r.StatusCode(), resp) // Codifica la respuesta como JSON y la envía al cliente.
 }
 
 // encodeError codifica los errores en formato JSON.
-func encodeError(_ context.Context, err error, w http.ResponseWriter) {
-	// Establece el tipo de contenido de la respuesta como JSON
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-	// Convierte el error en una respuesta del tipo response.Response
+func encodeError(c *gin.Context, err error) {
+	c.Header("Content-Type", "application/json; charset=utf-8")
 	resp := err.(response.Response)
-
-	// Establece el código de estado de la respuesta HTTP
-	w.WriteHeader(resp.StatusCode())
-
-	// Codifica el error en formato JSON y lo escribe en el cuerpo de la respuesta HTTP
-	_ = json.NewEncoder(w).Encode(resp)
-}
-
-// InvalidMethod envía una respuesta de error cuando el método HTTP no es compatible con el endpoint.
-func InvalidMethod(w http.ResponseWriter) {
-	status := http.StatusNotFound
-
-	// Escribe el mensaje de error JSON en el cuerpo de la respuesta HTTP
-	fmt.Fprintf(w, `{"status": %d, "message": "method doesn't exist"}`, status)
-}
-
-// MsgResponse envía una respuesta personalizada con el estado y el mensaje proporcionados.
-func MsgResponse(w http.ResponseWriter, status int, message string) {
-	// Escribe el mensaje personalizado JSON en el cuerpo de la respuesta HTTP
-	fmt.Fprintf(w, `{"status": %d, "message": %s}`, status, message)
+	c.JSON(resp.StatusCode(), resp) // Codifica el error como JSON y lo envía al cliente.
 }

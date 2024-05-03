@@ -1,11 +1,11 @@
 package main
 
 import (
-	"context"
+	"context"  // Proporciona funcionalidades para manejar contextos en Go
 	"fmt"      // Paquete para formateo de salida
 	"log"      // Paquete para registro de errores
 	"net/http" // Paquete para crear servidores HTTP
-	"os"
+	"os"       // Proporciona funciones para interactuar con el sistema operativo
 
 	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/user"
 	"github.com/EmiiFernandez/go-fundamentals-web-users/pkg/bootstrap"
@@ -14,13 +14,8 @@ import (
 )
 
 func main() {
-	//Importo las variables de entorno
-	//por defecto toma el archivo .env. Si cambio el nombre del archivo si necesitaria agregarlo al Load
+	// Importo las variables de entorno desde el archivo .env
 	_ = godotenv.Load()
-
-	// Crea un nuevo multiplexor para manejar las solicitudes HTTP
-	// el multiplexor decide a qué función o controlador debe enviar esa solicitud para ser procesada
-	server := http.NewServeMux()
 
 	// Conexión a la base de datos MySQL utilizando Docker
 	db, err := bootstrap.NewBD()
@@ -47,15 +42,42 @@ func main() {
 	ctx := context.Background()
 
 	// Configura el servidor HTTP para manejar las solicitudes relacionadas con usuarios
-	handler.NewUserHTTPServer(ctx, server, user.MakeEndpoints(ctx, service))
+	h := handler.NewUserHTTPServer(user.MakeEndpoints(ctx, service))
 
-	//Importo el puerto desde las variables de entorno
+	// Importo el puerto desde las variables de entorno
 	port := os.Getenv("PORT")
 	// Imprime un mensaje indicando el puerto donde se inicia el servidor
 	fmt.Println("Server started at port ", port)
 
-	// Inicia el servidor HTTP en el puerto 8080 y maneja cualquier error fatal
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), server))
+	address := fmt.Sprintf("127.0.0.1:%s", port)
+
+	// Configura y lanza el servidor HTTP
+	srv := &http.Server{
+		Handler: accessControl(h),
+		Addr:    address,
+	}
+
+	log.Fatal(srv.ListenAndServe())
+}
+
+// accessControl agrega encabezados de control de acceso a todas las solicitudes HTTP.
+func accessControl(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Configura los encabezados de control de acceso permitiendo solicitudes desde cualquier origen.
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// Configura los métodos HTTP permitidos.
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS, HEAD, DELETE")
+		// Configura los encabezados HTTP permitidos.
+		w.Header().Set("Access-Control-Allow-Headers", "Accept,Authorization,Cache-Control,Content-Type,DNT,If-Modified-Since,Keep-Alive,Origin,User-Agent,X-Requested-With")
+
+		// Maneja las solicitudes de opción (preflight) y responde directamente sin pasarlas al manejador principal.
+		if r.Method == "OPTIONS" {
+			return
+		}
+
+		// Pasa la solicitud al siguiente manejador en la cadena.
+		h.ServeHTTP(w, r)
+	})
 }
 
 /*
@@ -70,4 +92,17 @@ Funcionamiento de la arquitectura:
 7. Preparación de la respuesta: El servicio recibe los resultados del repositorio y los procesa para construir la respuesta.
 8. Codificación y envío: El controlador codifica la respuesta en formato JSON o HTML y la envía al cliente junto con el código de estado HTTP correspondiente.
 9. Recepción de la respuesta: El cliente recibe la respuesta y la procesa según el tipo de contenido y el código de estado.
+*/
+
+/*
+1. El archivo main.go es el punto de entrada de la aplicación.
+2. Se importan los paquetes necesarios.
+3. La función main() inicia la aplicación:
+-- Carga las variables de entorno desde el archivo .env.
+-- Establece una conexión a la base de datos MySQL utilizando Docker.
+-- Crea un logger para registrar mensajes.
+-- Crea un repositorio y un servicio para gestionar usuarios.
+-- Configura el servidor HTTP para manejar las solicitudes relacionadas con usuarios.
+-- Configura y lanza el servidor en el puerto especificado en las variables de entorno.
+4. La función accessControl() es un middleware que agrega encabezados de control de acceso a todas las solicitudes HTTP, permitiendo solicitudes desde cualquier origen, configurando los métodos HTTP permitidos y los encabezados permitidos. Además, maneja las solicitudes de opción (preflight) y las responde directamente sin pasarlas al manejador principal.
 */
