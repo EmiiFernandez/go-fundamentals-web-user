@@ -22,8 +22,21 @@ Para ejecutar la aplicación, sigue estos pasos:
 1. Instala Go en tu sistema si aún no lo tienes: https://golang.org/doc/install
 2. Clona este repositorio: `git clone https://github.com/tu_usuario/tu_proyecto.git](https://github.com/EmiiFernandez/go-fundamentals-web-user`
 3. Navega al directorio del proyecto: `cd go-fundamentals-web-user`
-4. Instala las dependencias del proyecto: `go mod tidy`
-5. Ejecuta la aplicación: `go run cmd/main.go`
+4. **Configura las Variables de Entorno**: Antes de ejecutar la aplicación, asegúrate de configurar las siguientes variables de entorno en tu sistema:
+   - `PORT`: Puerto en el que se ejecutará la aplicación (predeterminado: 8080).
+   - `DATABASE_HOST`: Dirección IP o nombre de host de la base de datos (*predeterminado: 127.0.0.1*)
+   - `DATABASE_PORT`: Puerto de la base de datos (*predeterminado: 3336*)
+   - `DATABASE_NAME`: *Nombre de la base de datos*
+   - `DATABASE_USER`:*Nombre de usuario de la base de datos* 
+   - `DATABASE_PASSWORD`: *Contraseña de la base de datos* 
+   - `TOKEN`: *Token de autenticación para acceder a la API (reemplazar con un token seguro)*
+5.**Ejecuta una instancia de la base de datos MySQL utilizando Docker**:
+   - Abre tu terminal y ejecuta el siguiente comando:
+     ```bash
+     docker run -d --name my_database -e MYSQL_ROOT_PASSWORD=my_password -e MYSQL_DATABASE=my_database -p 3336:3306 mysql:latest
+     ```
+6. Instala las dependencias del proyecto: `go mod tidy`
+7. Ejecuta la aplicación: `go run cmd/main.go`
 
 La aplicación se ejecutará en `http://localhost:8080` por defecto
 
