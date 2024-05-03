@@ -3,7 +3,7 @@
 ### Descripción
 Este proyecto implementa un servicio web a nivel local utilizando microservicios y aplicaciones con comunicación HTTP 1.1 y el formato de intercambio JSON. La API proporciona operaciones básicas para administrar usuarios, como crear, leer, actualizar y eliminar (CRUD). Utiliza Gin Gonic como framework web y se conecta a una base de datos SQL a través de Docker para persistencia de datos.
 
-## Estructura del Proyecto
+### Estructura del Proyecto
 
 El proyecto sigue una estructura modularizada que incluye los siguientes componentes principales:
 
@@ -15,7 +15,7 @@ El proyecto sigue una estructura modularizada que incluye los siguientes compone
 - **Transporte**: Define funciones para decodificar los datos de la solicitud, llamar a los controladores y codificar las respuestas.
 - **Bootstrap**: Configura la inicialización de la aplicación, como la conexión a la base de datos y la configuración del logger.
 
-## Ejecución
+### Ejecución
 
 Para ejecutar la aplicación, sigue estos pasos:
 
@@ -40,7 +40,7 @@ Para ejecutar la aplicación, sigue estos pasos:
 
 La aplicación se ejecutará en `http://localhost:8080` por defecto
 
-## Rutas
+### Rutas
 
 - **GET** /users: Obtiene todos los usuarios almacenados en la base de datos.
 - **GET** /users/:id: Obtiene un usuario específico por su ID.
