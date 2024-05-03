@@ -112,6 +112,10 @@ func (s *service) Delete(ctx context.Context, id uint64) (*domain.User, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Registra un mensaje en el logger indicando la actualización del usuario.
+	s.log.Println("Se ha eliminado el usuario")
+
 	// Si no hay errores, devolvemos el usuario eliminado
 	return nil, nil
 }
