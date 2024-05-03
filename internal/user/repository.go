@@ -7,7 +7,6 @@ import (
 	"log" // Paquete `log`: Proporciona funciones para registrar mensajes.
 	"strings"
 
-	// Paquete `slices`: Proporciona funciones para trabajar con slices.
 	"github.com/EmiiFernandez/go-fundamentals-web-users/internal/domain" // Paquete `internal/domain`: Proporciona la estructura `User` utilizada para representar datos de usuario.
 )
 
@@ -27,6 +26,8 @@ type Repository interface {
 	Get(ctx context.Context, id uint64) (*domain.User, error)
 	// Update actualiza los datos de un usuario existente.
 	Update(ctx context.Context, id uint64, firstName, lastName, email *string) error
+	// Elimina un usuario específico basado en su ID.
+	Delete(ctx context.Context, id uint64) (*domain.User, error)
 }
 
 // repo es una implementación de la interfaz Repository.
@@ -152,6 +153,7 @@ if email != nil {
 }
 
 r.log.Println("repository update") // Registrar en el logger que se ha actualizado un usuario*/
+
 // Update actualiza los datos de un usuario existente en la base de datos.
 func (r *repo) Update(ctx context.Context, id uint64, firstName, lastName, email *string) error {
 	// Construir la lista de campos a actualizar y los valores correspondientes.
@@ -212,6 +214,35 @@ func (r *repo) Update(ctx context.Context, id uint64, firstName, lastName, email
 	// Registrar el éxito en el log y devolver nil (sin error).
 	r.log.Println("user updated id: ", id)
 	return nil
+}
+
+// Delete elimina los datos de un usuario existente en la base de datos.
+func (r *repo) Delete(ctx context.Context, id uint64) (*domain.User, error) {
+	// Consulta SQL para eliminar un usuario por su ID
+	sqlQ := "DELETE FROM users WHERE id = ?"
+
+	// Ejecutar la consulta SQL para eliminar el usuario
+	result, err := r.db.Exec(sqlQ, id)
+	if err != nil {
+		r.log.Println(err.Error())
+		return nil, err
+	}
+
+	// Verificar si se eliminó algún registro
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		r.log.Println(err.Error())
+		return nil, err
+	}
+	if rowsAffected == 0 {
+		// Si no se encontró ningún usuario para eliminar, devuelve un error
+		return nil, ErrNotFound{id}
+
+	}
+
+	// Registrar el éxito en el log y devolver el usuario eliminado
+	r.log.Println("Usuario eliminado con ID:", id)
+	return &domain.User{ID: id}, nil
 }
 
 /*

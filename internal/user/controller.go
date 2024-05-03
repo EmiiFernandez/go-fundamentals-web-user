@@ -20,6 +20,7 @@ type (
 		GetAll Controller // Campo `GetAll` de tipo `Controller` que almacena el controlador para el endpoint de obtención de todos los usuarios.
 		Get    Controller // Campo `Get` de tipo `Controller` que almacena el controlador para el endpoint de obtención de un usuario por ID.
 		Update Controller // Campo `Update` de tipo `Controller` que almacena el controlador para el endpoint de actualización de un usuario por ID.
+		Delete Controller // // Campo `Delete` de tipo `Controller` que almacena el controlador para el endpoint de eliminación de un usuario por ID.
 	}
 
 	GetReq struct {
@@ -41,6 +42,11 @@ type (
 		LastName  *string `json:"last_name"`  // Campo `LastName` de tipo puntero a cadena para almacenar el apellido del usuario.
 		Email     *string `json:"email"`      // Campo `Email` de tipo puntero a cadena para almacenar el correo electrónico del usuario.
 	}
+
+	// DeleteReq: Define una estructura `DeleteReq` para representar la solicitud de eliminación de un usuario.
+	DeleteReq struct {
+		ID uint64 // ID del usuario a eliminar
+	}
 )
 
 // Funciones del controlador
@@ -52,6 +58,7 @@ func MakeEndpoints(ctx context.Context, s Service) Endpoints {
 		GetAll: makeGetAllEndpoint(s),
 		Get:    makeGetEndopoint(s),
 		Update: makeUpdateEndpoint(s),
+		Delete: makeDeleteEndpoint(s),
 	}
 }
 
@@ -144,6 +151,30 @@ func makeUpdateEndpoint(s Service) Controller {
 		}
 		fmt.Println(req)
 		return response.OK("success", nil), nil
+	}
+}
+
+func makeDeleteEndpoint(s Service) Controller {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		// Verifica si la solicitud tiene el formato esperado
+		req, ok := request.(DeleteReq)
+		if !ok {
+			// Si la solicitud no tiene el formato esperado, devuelve un error
+			return nil, errors.New("invalid request format")
+		}
+
+		// Llama al método Delete del servicio para eliminar el usuario
+		_, err := s.Delete(ctx, req.ID)
+		if err != nil {
+			// Maneja el error en caso de que falle la eliminación del usuario
+			if errors.As(err, &ErrNotFound{}) {
+				return nil, response.NotFound(err.Error())
+			}
+			return nil, response.InternalServerError(err.Error())
+		}
+
+		// Devuelve un mensaje de éxito indicando que el usuario fue eliminado
+		return response.OK("user deleted successfully", nil), nil
 	}
 }
 

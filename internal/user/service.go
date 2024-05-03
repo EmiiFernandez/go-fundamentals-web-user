@@ -21,6 +21,9 @@ type Service interface {
 
 	// Update actualiza los datos de un usuario existente.
 	Update(ctx context.Context, id uint64, firstName, lastName, email *string) error
+
+	// Elimina un usuario específico basado en su ID.
+	Delete(ctx context.Context, id uint64) (*domain.User, error)
 }
 
 // service es una implementación del servicio de usuarios.
@@ -100,6 +103,17 @@ func (s *service) Update(ctx context.Context, id uint64, firstName, lastName, em
 	s.log.Println("Se ha actualizado el usuario")
 
 	return nil
+}
+
+// Delete elimina un usuario por su ID.
+func (s *service) Delete(ctx context.Context, id uint64) (*domain.User, error) {
+	// Intenta eliminar el usuario utilizando el repositorio
+	_, err := s.repo.Delete(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	// Si no hay errores, devolvemos el usuario eliminado
+	return nil, nil
 }
 
 /*

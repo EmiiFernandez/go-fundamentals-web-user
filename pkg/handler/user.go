@@ -44,6 +44,12 @@ func NewUserHTTPServer(endpoints user.Endpoints) http.Handler {
 		encodeResponse,
 		encodeError,
 	))
+	r.DELETE("/users/:id", transport.GinServer(
+		transport.Endpoint(endpoints.Delete),
+		decodeDeleteUser,
+		encodeResponse,
+		encodeError,
+	))
 
 	return r // Retorna el enrutador Gin como un manejador HTTP.
 }
@@ -118,6 +124,41 @@ func decodeUpdateUser(c *gin.Context) (interface{}, error) {
 	req.ID = id
 	return req, nil // Se devuelve la solicitud de actualización decodificada y sin errores.
 }
+
+// decodeDeleteUser decodifica los parámetros de la solicitud para obtener el ID del usuario y eliminar el usuario.
+func decodeDeleteUser(c *gin.Context) (interface{}, error) {
+	// Verifica si el token de autorización es válido.
+	if err := tokenVerify(c.Request.Header.Get("Authorization")); err != nil {
+		return nil, response.Unauthorized(err.Error())
+	}
+
+	// Obtiene el ID del usuario de los parámetros de la URL.
+	id, err := strconv.ParseUint(c.Params.ByName("id"), 10, 64)
+	if err != nil {
+		return nil, response.BadRequest(err.Error())
+	}
+
+	// Crea una instancia de DeleteReq con el ID del usuario.
+	req := user.DeleteReq{
+		ID: id,
+	}
+
+	// Devuelve la estructura DeleteReq.
+	return req, nil
+}
+
+/*
+// decodeGetUser decodifica los parámetros de la solicitud para obtener
+	// Obtiene el ID del usuario de los parámetros de la URL.
+	id, err := strconv.ParseUint(c.Params.ByName("id"), 10, 64)
+	if err != nil {
+		return nil, response.BadRequest(err.Error())
+	}
+
+	// Retorna un objeto GetReq que contiene el ID del usuario.
+
+}
+*/
 
 // tokenVerify verifica si el token proporcionado coincide con el token almacenado en las variables de entorno.
 // Si el token no coincide, devuelve un error.
